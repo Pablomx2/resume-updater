@@ -4,6 +4,6 @@
 # macOS
 .DS_Store
 
-# exported CVs land here by default — keep generated output out of the repo
-*-cv.html
-!cv-updater.html
+# exported resumes land here by default — keep generated output out of the repo
+*-resume.html
+!resume-updater.html

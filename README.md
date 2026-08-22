@@ -1,12 +1,12 @@
-# CV Updater
+# Resume Updater
 
-A single-file app for keeping a film-credits CV on one page.
+A single-file app for keeping a film-credits resume on one page.
 
-**Open `cv-updater.html` in a browser.** No install, no server, no internet needed.
+**Open `resume-updater.html` in a browser.** No install, no server, no internet needed.
 
-The app ships **empty** — no CV and no logo are stored in it. Use **Import HTML…** to load
+The app ships **empty** — no resume and no logo are stored in it. Use **Import HTML…** to load
 one (an export from this app, or the original bundled artifact download); the contact line,
-sections, every credit and the logo all come across. Or press **Start a blank CV** and type.
+sections, every credit and the logo all come across. Or press **Start a blank resume** and type.
 
 `index.html` is the project page — a short write-up with a link that launches the app.
 It doubles as the GitHub Pages landing page.
@@ -35,11 +35,11 @@ hand-picked pair stays coherent instead of clashing. Two structural tweaks sit a
 the weight of the rule under your name (hairline, rule, bold) and whether the section
 dividers show. Picking any preset value by hand just drops you into "custom"; nothing locks.
 
-The look travels with the CV: it is written into the export and read back on import.
+The look travels with the resume: it is written into the export and read back on import.
 Noir prints only if you tick **Background graphics** in the print dialogue — the app says
 so when the paper is dark.
 
-**Logo** — there is no logo to start with. It arrives one of two ways: importing a CV
+**Logo** — there is no logo to start with. It arrives one of two ways: importing a resume
 lifts the lockup image out of that file, or **Upload…** takes a PNG, JPG or SVG from your
 machine. It prints 15px tall at the top right, so keep the file small (512KB ceiling —
 a wide transparent PNG or an SVG is ideal). **Remove** takes it off again, and exports
@@ -71,8 +71,8 @@ still hidden.
 
 | | |
 |---|---|
-| **Import HTML…** | Loads a CV back in — a file exported here, or the original bundled artifact download. |
-| **Export HTML** | Opens a Save As dialogue, then writes a clean standalone CV with the fitted column widths and text size baked in. Hidden credits ride along in the data, unprinted. Still hand-editable, still re-importable. Firefox and Safari have no save picker, so there it downloads to your Downloads folder as before. |
+| **Import HTML…** | Loads a resume back in — a file exported here, or the original bundled artifact download. |
+| **Export HTML** | Opens a Save As dialogue, then writes a clean standalone resume with the fitted column widths and text size baked in. Hidden credits ride along in the data, unprinted. Still hand-editable, still re-importable. Firefox and Safari have no save picker, so there it downloads to your Downloads folder as before. |
 | **Print / PDF** | Prints just the page. In the print dialog choose **Save as PDF**, paper **US Letter**, margins **None**, and turn **off** headers/footers. |
 | **Clear** | Empties the editor and starts over. Export first if you want to keep what is there. |
 
@@ -82,19 +82,19 @@ to keep or send.
 
 ## Rebuilding
 
-`cv-updater.html` is generated. To change the app itself, edit `src/app.template.html`
+`resume-updater.html` is generated. To change the app itself, edit `src/app.template.html`
 and run:
 
 ```bash
 node src/build.js
 ```
 
-`src/seed.json` is the state the app starts in — deliberately empty, so neither a CV nor
+`src/seed.json` is the state the app starts in — deliberately empty, so neither a resume nor
 a logo lives in this repo.
 
 The sheet is drawn by one function, `sheetHTML`, and styled by the `#page` rules in the
 template's stylesheet. **Export serialises that same function into the file it writes and
-copies those same rules**, so the exported CV cannot drift away from the preview — change
+copies those same rules**, so the exported resume cannot drift away from the preview — change
 the sheet in one place and both follow.
 
 ## Tests
