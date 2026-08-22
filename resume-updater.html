@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CV Updater</title>
+<title>Resume Updater</title>
 <style>
 :root{
   --paper:#faf9f5; --ink:#14140f; --body:#2e2d29; --soft:#54524b; --faint:#9b998f;
@@ -305,7 +305,7 @@ input{font:inherit;color:inherit}
 <body>
 
 <div class="topbar">
-  <h1>CV Updater</h1>
+  <h1>Resume Updater</h1>
   <span class="sub" id="subtitle"></span>
   <div class="tbtns">
     <button class="btn" id="b-import"><span class="lf">Import HTML…</span><span class="ls">Import</span></button>
@@ -342,7 +342,7 @@ input{font:inherit;color:inherit}
         <button class="mini" id="b-logo">Upload…</button>
         <button class="mini" id="b-logo-clear">Remove</button>
         <span class="logohint">Sits top-right, 15px tall. PNG, JPG or SVG — a wide
-          transparent PNG works best. Imported CVs bring their own.</span>
+          transparent PNG works best. Imported resumes bring their own.</span>
       </div>
       <input type="file" id="logofile" accept="image/*" hidden>
 
@@ -403,7 +403,7 @@ input{font:inherit;color:inherit}
           <div class="colgrab" id="grab1" title="Drag to resize — switches auto columns off"></div>
           <div class="colgrab" id="grab2" title="Drag to resize — switches auto columns off"></div>
         </div>
-        <div id="pvempty"><div>Nothing loaded yet.<br>Use <b>Import HTML…</b> to bring in a CV.</div></div>
+        <div id="pvempty"><div>Nothing loaded yet.<br>Use <b>Import HTML…</b> to bring in a resume.</div></div>
       </div>
     </div>
     <div class="hint">Auto-fit only shrinks the credit text, never the header. Column widths are chosen to minimise
@@ -415,7 +415,7 @@ input{font:inherit;color:inherit}
 
 <script>
 "use strict";
-/* The app ships with no CV and no logo in it. Both are filled in by Import HTML,
+/* The app ships with no resume and no logo in it. Both are filled in by Import HTML,
    by uploading an image, or by typing from scratch. */
 const SEED = {
   "name": "",
@@ -445,8 +445,9 @@ const AVAIL = PAGE_H - PAD_Y*2;      /* 976px of usable height */
 const BASE  = {fs:9.2, lh:12.5, secfs:8.6, secmt:8, legmt:14};
 const GUT   = 10;                    /* column gutter, px */
 const SLACK = 3;                     /* breathing room so a measured-exact fit still fits */
-const KEY   = "cv-updater.v1";
-/* How closely a credit's position matches the CV's stated Role, used to flag
+const KEY   = "resume-updater.v1";
+const OLDKEY = "cv-updater.v1";      /* what the key was called before the rename */
+/* How closely a credit's position matches the resume's stated Role, used to flag
    credits that dilute the headline. Plain equality is too strict — real
    listings vary in wording project to project ("Sound Mixer" vs "Production
    Sound Mixer") — so this scores similarity by shared character bigrams
@@ -537,7 +538,11 @@ function normalize(d){
   return out;
 }
 let S = normalize(SEED);
-try { const raw = localStorage.getItem(KEY); if (raw) S = normalize(JSON.parse(raw)); } catch(e){}
+/* fall back to the pre-rename key so an autosave from the old name is not stranded */
+try {
+  const raw = localStorage.getItem(KEY) || localStorage.getItem(OLDKEY);
+  if (raw) S = normalize(JSON.parse(raw));
+} catch(e){}
 let saveT = 0, saveWarned = false;
 function save(){ clearTimeout(saveT); saveT = setTimeout(() => {
   try { localStorage.setItem(KEY, JSON.stringify(S)); }
@@ -545,7 +550,7 @@ function save(){ clearTimeout(saveT); saveT = setTimeout(() => {
     /* almost always the quota, and silently losing autosave is worse than saying so */
     if (!saveWarned){
       saveWarned = true;
-      alert("Your browser would not save this CV locally — it is probably out of storage space " +
+      alert("Your browser would not save this resume locally — it is probably out of storage space " +
             "(a large logo is the usual cause).\n\nEditing still works, but close the tab and the " +
             "changes are gone. Use Export HTML to keep them.");
     }
@@ -787,7 +792,7 @@ function layout(){
       if (tr.getBoundingClientRect().bottom - top > AVAIL) tr.classList.add("over");
     });
   }
-  /* an uploaded logo is worth showing even before there is a CV around it */
+  /* an uploaded logo is worth showing even before there is a resume around it */
   $("#pvhost").classList.toggle("empty", isEmpty() && !S.logo);
   advise({d:d, fs:m.fs, lh:m.lh, h:h, fits:fits, wrapped:wrapped});
   scalePreview();
@@ -828,8 +833,8 @@ function advise(st){
 
   if (isEmpty()){
     $("#a-badge").className = "badge idle";
-    $("#a-badge").textContent = "NO CV";
-    $("#a-summary").innerHTML = "Nothing loaded yet. <b>Import HTML…</b> takes a CV exported from " +
+    $("#a-badge").textContent = "NO RESUME";
+    $("#a-summary").innerHTML = "Nothing loaded yet. <b>Import HTML…</b> takes a resume exported from " +
       "this app, or the original bundled artifact download — the contact line, sections and every " +
       "credit come across. Or start a blank one and type.";
     $("#a-bars").innerHTML = "";
@@ -967,7 +972,7 @@ function renderCandidates(needN, wrapped){
    ========================================================= */
 function setSubtitle(){
   const n = totalCredits();
-  $("#subtitle").textContent = isEmpty() ? "no CV loaded"
+  $("#subtitle").textContent = isEmpty() ? "no resume loaded"
     : [S.name, n + " credit" + (n === 1 ? "" : "s")].filter(Boolean).join(" · ");
 }
 
@@ -1057,13 +1062,13 @@ function creditRow(s, si, c, ci){
       layout();
     }}, ["★"]);
   const offBtn = el("button", {class:"ico"+(c.off?"":" on"), "aria-pressed":c.off?"true":"false",
-    title:c.off?"Show on the CV":"Hide from the CV",
+    title:c.off?"Show on the resume":"Hide from the resume",
     onclick:() => {
       c.off = !c.off;
       row.classList.toggle("off", c.off);
       offBtn.classList.toggle("on", !c.off);
       offBtn.textContent = c.off ? "○" : "●";
-      offBtn.title = c.off ? "Show on the CV" : "Hide from the CV";
+      offBtn.title = c.off ? "Show on the resume" : "Hide from the resume";
       offBtn.setAttribute("aria-pressed", c.off ? "true" : "false");
       const box = row.closest(".sec"), cnt = box && box.querySelector(".count");
       if (cnt) cnt.textContent = s.credits.filter(x => !x.off).length + " shown";
@@ -1120,14 +1125,14 @@ function renderEditor(){
   const host = $("#ed-sections"); host.innerHTML = "";
   if (!S.sections.length){
     const b = el("div", {class:"blank"});
-    b.append(el("p", {}, ["No CV loaded. Bring one in, or start typing a blank one."]));
+    b.append(el("p", {}, ["No resume loaded. Bring one in, or start typing a blank one."]));
     const row = el("div", {class:"row"});
     row.append(el("button", {onclick:() => $("#file").click()}, ["Import HTML…"]));
     row.append(el("button", {class:"alt", onclick:() => {
       if (!S.contact.length) S.contact = [{text:"",link:""},{text:"",link:""},{text:"",link:""}];
       S.sections = BLANK_SECTIONS.map(n => ({name:n, credits:[{p:"",r:"",c:"",off:false,pin:false}]}));
       renderEditor(); layout(); $("#f-name").focus();
-    }}, ["Start a blank CV"]));
+    }}, ["Start a blank resume"]));
     b.append(row);
     host.append(b);
   }
@@ -1300,12 +1305,14 @@ $("#grab2").addEventListener("pointerdown", e => startColDrag(2, e));
 /* =========================================================
    IMPORT / EXPORT
    ========================================================= */
-function extractCV(text){
+function extractResume(text){
   /* an artifact bundle keeps the real document inside a JSON string */
   const b = text.match(/<script type="__bundler\/template"[^>]*>([\s\S]*?)<\/script>/);
-  if (b){ try { return extractCV(JSON.parse(b[1])); } catch(e){} }
-  const i = text.search(/(?:const|let|var|window\.)\s*CV(?:_DATA)?\s*=\s*\{/);
-  if (i < 0) throw new Error("No CV data found in that file.");
+  if (b){ try { return extractResume(JSON.parse(b[1])); } catch(e){} }
+  /* the block is called RESUME now; files exported when the app was "CV Updater"
+     call it CV, and those still have to import */
+  const i = text.search(/(?:const|let|var|window\.)\s*(?:RESUME|CV)(?:_DATA)?\s*=\s*\{/);
+  if (i < 0) throw new Error("No resume data found in that file.");
   const start = text.indexOf("{", i);
   let depth = 0, q = null, esc2 = false, end = -1;
   for (let j = start; j < text.length; j++){
@@ -1320,7 +1327,7 @@ function extractCV(text){
     else if (ch === "{") depth++;
     else if (ch === "}" && --depth === 0){ end = j + 1; break; }
   }
-  if (end < 0) throw new Error("The CV data block looks incomplete.");
+  if (end < 0) throw new Error("The resume data block looks incomplete.");
   return parseLiteral(text.slice(start, end));
 }
 
@@ -1333,7 +1340,7 @@ function parseLiteral(lit){
   try { return JSON.parse(lit); } catch (e){}
   const bare = lit.replace(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g, '""');
   if (/[()`;=]|\b(?:function|new|class|import|await|yield)\b/.test(bare))
-    throw new Error("That file's CV block contains code, not just data — refusing to run it.");
+    throw new Error("That file's resume block contains code, not just data — refusing to run it.");
   return Function("return (" + lit + ")")();
 }
 
@@ -1430,7 +1437,7 @@ $("#logofile").onchange = e => {
   rd.readAsDataURL(f);
 };
 
-/* Pull the lockup image out of an imported file so it travels with the CV. */
+/* Pull the lockup image out of an imported file so it travels with the resume. */
 function extractLogo(text){
   const m = text.match(/<img[^>]+src="(data:image\/[\w.+-]+;base64,[^"]+)"/i);
   if (m) return m[1];
@@ -1442,7 +1449,7 @@ function extractLogo(text){
       const uuid = JSON.parse(t[1]).match(/<img[^>]+src="([0-9a-f-]{36})"/i);
       const man  = JSON.parse(g[1]);
       const e    = uuid && man[uuid[1]];
-      /* compressed entries would need gunzipping — the CV just comes in without a logo */
+      /* compressed entries would need gunzipping — the resume just comes in without a logo */
       if (e && !e.compressed && /^image\//.test(e.mime)) return "data:" + e.mime + ";base64," + e.data;
     } catch (err){}
   }
@@ -1457,12 +1464,12 @@ $("#file").onchange = e => {
     try {
       const txt = String(rd.result);
       const isJson = !!f.name.match(/\.json$/i);
-      const data = isJson ? JSON.parse(txt) : extractCV(txt);
+      const data = isJson ? JSON.parse(txt) : extractResume(txt);
       S = normalize(data);
       /* Exports from here carry the logo inside the data. Older exports and the
          original artifact bundle only have it as an <img>, so dig it out of the
-         markup when the data had none. Either way a CV without a logo clears the
-         old one rather than leaving the previous CV's mark on it. */
+         markup when the data had none. Either way a resume without a logo clears the
+         old one rather than leaving the previous resume's mark on it. */
       if (!isJson && !S.logo) S.logo = extractLogo(txt) || "";
       syncOpts(); renderEditor(); layout();
       /* the point of importing is to see the sheet, which is behind a tab here */
@@ -1499,7 +1506,7 @@ function buildExport(){
 '<html lang="en"><head>',
 '<meta charset="utf-8">',
 '<meta name="viewport" content="width=device-width,initial-scale=1">',
-'<title>' + esc(S.name.replace(/\b(\w)(\w*)/g, (m,a,b) => a + b.toLowerCase())) + ' — ' + esc(S.role) + ' CV</title>',
+'<title>' + esc(S.name.replace(/\b(\w)(\w*)/g, (m,a,b) => a + b.toLowerCase())) + ' — ' + esc(S.role) + ' Resume</title>',
 '<style>',
 '  *{box-sizing:border-box}',
 '  body{margin:0;background:' + P.surround + ';font-family:\'Helvetica Neue\',Helvetica,Arial,sans-serif;',
@@ -1526,15 +1533,15 @@ sheetRules(),
 '<div id="page"' + (S.theme.dividers ? "" : ' class="nodiv"') + '></div>',
 '',
 '<script>',
-'/* Generated by CV Updater on ' + new Date().toISOString().slice(0,10) + '.',
+'/* Generated by Resume Updater on ' + new Date().toISOString().slice(0,10) + '.',
 '   Column widths and text size above were fitted to one page for this exact list.',
 '   Credits marked "off" are kept for reference and are not drawn on the sheet.',
-'   Edit the data below by hand, or re-open this file in CV Updater with "Import HTML". */',
-'const CV = ' + JSON.stringify(data, null, 2).replace(/<\//g, "<\\/") + ';',
+'   Edit the data below by hand, or re-open this file in Resume Updater with "Import HTML". */',
+'const RESUME = ' + JSON.stringify(data, null, 2).replace(/<\//g, "<\\/") + ';',
 '',
 '/* the app\'s own renderer, copied in whole so the sheet is drawn by one function */',
 "const sheetHTML = " + sheetHTML.toString().replace(/<\//g, "<\\/") + ";",
-'document.getElementById("page").innerHTML = sheetHTML(CV);',
+'document.getElementById("page").innerHTML = sheetHTML(RESUME);',
 '',
 '/* the sheet is 816px wide; on a narrow screen scale it down rather than clip it */',
 'function fitViewport(){',
@@ -1548,7 +1555,7 @@ sheetRules(),
 '  fitViewport();',
 '  const p = document.getElementById("page");',
 '  if (p.scrollHeight > p.clientHeight + 2)',
-'    console.warn("CV overflows one page by " + (p.scrollHeight - p.clientHeight) + "px.");',
+'    console.warn("Resume overflows one page by " + (p.scrollHeight - p.clientHeight) + "px.");',
 '});',
 '<\/script>',
 '</body></html>',
@@ -1557,7 +1564,7 @@ sheetRules(),
 
 function exportName(){
   const slug = S.name.trim().replace(/[^\w\s-]/g, "").replace(/\s+/g, "-").toLowerCase();
-  return slug ? slug + "-cv.html" : "cv.html";
+  return slug ? slug + "-resume.html" : "resume.html";
 }
 function downloadFile(html, name){
   const blob = new Blob([html], {type:"text/html"});
@@ -1571,7 +1578,7 @@ $("#b-export").onclick = async () => {
   /* a second click while the dialog is open would otherwise be refused as
      "file picker already active" and quietly download a duplicate */
   if (picking) return;
-  if (isEmpty()){ alert("There is no CV to export yet — import one, or start a blank one."); return; }
+  if (isEmpty()){ alert("There is no resume to export yet — import one, or start a blank one."); return; }
   const html = buildExport(), name = exportName();
   /* Ask where to put it. Chromium has the picker, including on file://;
      Firefox and Safari do not, and fall back to a plain download. */
@@ -1597,7 +1604,7 @@ $("#b-export").onclick = async () => {
 };
 $("#b-print").onclick = () => window.print();
 $("#b-clear").onclick = () => {
-  if (!confirm("Clear the CV in the editor and start empty?\n\nExport first if you want to keep it.")) return;
+  if (!confirm("Clear the resume in the editor and start empty?\n\nExport first if you want to keep it.")) return;
   S = normalize(SEED); syncOpts(); renderEditor(); layout();
 };
 

@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CV Updater — keep a one-page CV on one page</title>
-<meta name="description" content="A single-file browser app that edits an HTML CV, auto-fits it to one page, auto-sizes the columns, and says when the credit list has grown too long.">
+<title>Resume Updater — keep a one-page resume on one page</title>
+<meta name="description" content="A single-file browser app that edits an HTML resume, auto-fits it to one page, auto-sizes the columns, and says when the credit list has grown too long.">
 <meta name="theme-color" content="#14140f">
 <meta property="og:type" content="website">
-<meta property="og:title" content="CV Updater — keep a one-page CV on one page">
-<meta property="og:description" content="Edits a film-credits CV, fits the type and columns to exactly one sheet, and tells you when the list has outgrown the page. One HTML file, no install, no server.">
-<meta property="og:url" content="https://pablomx2.github.io/cv-updater/">
+<meta property="og:title" content="Resume Updater — keep a one-page resume on one page">
+<meta property="og:description" content="Edits a film-credits resume, fits the type and columns to exactly one sheet, and tells you when the list has outgrown the page. One HTML file, no install, no server.">
+<meta property="og:url" content="https://pablomx2.github.io/resume-updater/">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="CV Updater — keep a one-page CV on one page">
-<meta name="twitter:description" content="Edits a film-credits CV, fits the type and columns to exactly one sheet, and says when the list has outgrown the page.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2314140f'/%3E%3Ctext x='32' y='42' font-family='Helvetica,Arial,sans-serif' font-size='28' font-weight='700' fill='%23faf9f5' text-anchor='middle'%3ECV%3C/text%3E%3C/svg%3E">
+<meta name="twitter:title" content="Resume Updater — keep a one-page resume on one page">
+<meta name="twitter:description" content="Edits a film-credits resume, fits the type and columns to exactly one sheet, and says when the list has outgrown the page.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='10' fill='%2314140f'/%3E%3Ctext x='32' y='42' font-family='Helvetica,Arial,sans-serif' font-size='34' font-weight='700' fill='%23faf9f5' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
 <style>
   :root{
     --paper:#faf9f5; --ink:#14140f; --body:#2e2d29; --soft:#54524b;
@@ -47,7 +47,7 @@
   a{color:var(--ink)}
   a:hover{text-decoration:none}
 
-  /* ---- masthead, borrowed from the CV itself ---- */
+  /* ---- masthead, borrowed from the resume itself ---- */
   .head{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;padding-bottom:11px}
   .title{font-size:34px;font-weight:700;letter-spacing:-.8px;line-height:1;color:var(--ink);margin:0}
   .kicker{font-size:9px;font-weight:700;letter-spacing:2.6px;color:var(--soft);margin-top:7px;text-transform:uppercase}
@@ -71,7 +71,7 @@
   .btn.ghost:hover{background:transparent;border-color:var(--ink)}
   .note{font-size:13px;color:var(--faint);margin-top:10px}
 
-  /* ---- section rules, borrowed from the CV ---- */
+  /* ---- section rules, borrowed from the resume ---- */
   .sec{display:flex;align-items:baseline;gap:9px;margin:44px 0 16px}
   .sec h2{font-size:10px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--ink);margin:0;white-space:nowrap}
   .sec .r{flex:1;height:1px;background:var(--rule)}
@@ -114,7 +114,7 @@
 
   <header class="head">
     <div>
-      <h1 class="title">CV Updater</h1>
+      <h1 class="title">Resume Updater</h1>
       <div class="kicker">Film &amp; television credits</div>
     </div>
     <div class="lockup">
@@ -123,20 +123,20 @@
   </header>
   <div class="keyline"></div>
 
-  <p class="lede">A film CV lives or dies on <b>fitting one page</b>. This is a single HTML file that
+  <p class="lede">A film resume lives or dies on <b>fitting one page</b>. This is a single HTML file that
   edits the credit list, sizes the type and columns to fill exactly one sheet, and tells you when
   the list has outgrown the page.</p>
 
   <p class="sub">No install, no build step, no server, no internet. The app ships empty —
-  drop in an existing CV with <b>Import HTML</b> and it picks up the contact line, every
+  drop in an existing resume with <b>Import HTML</b> and it picks up the contact line, every
   section and credit, and the logo off that file. Or start blank, type, and upload your
   own logo.</p>
 
   <div class="cta">
-    <a class="btn" href="cv-updater.html">Open the app</a>
+    <a class="btn" href="resume-updater.html">Open the app</a>
     <a class="btn ghost" href="#how">How it works</a>
   </div>
-  <p class="note">Runs entirely in your browser. Nothing is uploaded anywhere, and no CV is
+  <p class="note">Runs entirely in your browser. Nothing is uploaded anywhere, and no resume is
   stored in this repository.</p>
 
   <div class="sec"><h2>What it does</h2><div class="r"></div></div>
@@ -144,7 +144,7 @@
     <div>
       <h3>Fits one page, exactly</h3>
       <p>Binary-searches the largest credit text size that still fits US Letter. The header never
-      shrinks, and the type is capped at the original design size — it will not blow the CV up just
+      shrinks, and the type is capped at the original design size — it will not blow the resume up just
       to fill space.</p>
     </div>
     <div>
@@ -167,7 +167,7 @@
     </div>
     <div>
       <h3>Brings its own logo</h3>
-      <p>No logo ships with the app. Importing a CV lifts the lockup image out of that file,
+      <p>No logo ships with the app. Importing a resume lifts the lockup image out of that file,
       or upload a PNG, JPG or SVG yourself. It travels with every export from then on.</p>
     </div>
     <div>
@@ -229,8 +229,8 @@
 
   <div class="sec" id="how"><h2>How it works</h2><div class="r"></div></div>
   <ol class="steps">
-    <li><b>Open <code>cv-updater.html</code></b> in any browser, then <b>Import HTML…</b> to load a CV —
-      one exported from this app, or the original bundled artifact download. <b>Start a blank CV</b>
+    <li><b>Open <code>resume-updater.html</code></b> in any browser, then <b>Import HTML…</b> to load a resume —
+      one exported from this app, or the original bundled artifact download. <b>Start a blank resume</b>
       sets up the usual sections if you would rather type.</li>
     <li><b>Edit.</b> Change any field and the preview refits instantly. New credits land at the top
       of their section, where the newest job belongs. Drag the ⠿ handle to reorder one, including
@@ -241,14 +241,14 @@
     <li><b>Read the advice.</b> The panel grades the page and names the specific lines worth cutting.
       <b>Hide</b> takes one out of the running without deleting it.</li>
     <li><b>Export or print.</b> <b>Export HTML</b> asks where to save, then writes a clean standalone
-      CV with the fitted numbers baked in — still hand-editable, still re-importable.
+      resume with the fitted numbers baked in — still hand-editable, still re-importable.
       <b>Print / PDF</b> prints just the sheet.</li>
   </ol>
 
   <div class="sec"><h2>Buttons</h2><div class="r"></div></div>
   <table class="keys">
-    <tr><td>Import HTML</td><td>Reads a CV in — one exported here, or the original bundled artifact download. Brings the logo with it.</td></tr>
-    <tr><td>Export HTML</td><td>Asks where to save, then writes a standalone CV with the fitted column widths and text size baked in. Firefox and Safari have no save picker, so there it goes straight to Downloads.</td></tr>
+    <tr><td>Import HTML</td><td>Reads a resume in — one exported here, or the original bundled artifact download. Brings the logo with it.</td></tr>
+    <tr><td>Export HTML</td><td>Asks where to save, then writes a standalone resume with the fitted column widths and text size baked in. Firefox and Safari have no save picker, so there it goes straight to Downloads.</td></tr>
     <tr><td>Print / PDF</td><td>Prints the sheet alone. Choose US Letter, margins <b>None</b>, headers and footers off.</td></tr>
     <tr><td>Clear</td><td>Empties the editor and starts over.</td></tr>
   </table>
@@ -256,9 +256,9 @@
   Use <b>Export HTML</b> for anything you want to keep or send.</p>
 
   <div class="sec"><h2>Building it</h2><div class="r"></div></div>
-  <p class="sub"><code>cv-updater.html</code> is generated. To change the app itself, edit
+  <p class="sub"><code>resume-updater.html</code> is generated. To change the app itself, edit
   <code>src/app.template.html</code> and run <code>node src/build.js</code>. <code>src/seed.json</code>
-  is the state the app starts in — deliberately empty, so neither a CV nor a logo lives in
+  is the state the app starts in — deliberately empty, so neither a resume nor a logo lives in
   this repository.</p>
 
   <footer>

@@ -1,4 +1,4 @@
-/* Round-trip tests for the CV data contract.  Run:  node test/roundtrip.js
+/* Round-trip tests for the resume data contract.  Run:  node test/roundtrip.js
 
    There is no build step and no dependency to install. The functions under test are
    lifted straight out of src/app.template.html by name, so the test always runs the
@@ -28,7 +28,7 @@ function extract(name){
 /* Everything the data path touches, evaluated in one scope with a stub for the
    handful of browser objects buildExport reaches for. */
 const NAMES = ["esc","dec","hex2rgb","rgb2hex","mix","luma","palette","PRESETS","THEME0","HEX",
-               "normalize","sheetHTML","sheetRules","parseLiteral","extractCV","extractLogo","buildExport"];
+               "normalize","sheetHTML","sheetRules","parseLiteral","extractResume","extractLogo","buildExport"];
 const PRELUDE = `
   const PAGE_W=816, PAGE_H=1056, PAD_X=48, PAD_Y=40;
   const TOTAL = PAGE_W - PAD_X*2;
@@ -103,7 +103,7 @@ console.log("\nexport → import");
 {
   scope.setS(scope.normalize(FIXTURE));
   const file = scope.buildExport();
-  const back = scope.normalize(scope.extractCV(file));
+  const back = scope.normalize(scope.extractResume(file));
   const flat = st => st.sections.map(s => s.name + ":" +
     s.credits.map(c => c.p + (c.off ? "[off]" : "") + (c.pin ? "[pin]" : "")).join(","));
   eq("every credit survives, flags and all", flat(back), flat(scope.normalize(FIXTURE)));
@@ -121,9 +121,11 @@ console.log("\nimporting someone else's file");
 {
   const old = '<html><body><div class="lockup"><img src="' + LOGO + '" alt=""></div>' +
     '<script>\nconst CV = {"name":"OLD","sections":[{"name":"F","credits":[["A","B","C"]]}]};\n<\/script></body></html>';
-  const st = scope.normalize(scope.extractCV(old));
-  eq("reads an older export", st.name, "OLD");
+  const st = scope.normalize(scope.extractResume(old));
+  eq("reads a pre-rename export, whose block is called CV", st.name, "OLD");
   eq("recovers a logo that is only in the markup", scope.extractLogo(old), LOGO);
+  const renamed = '<html><body><script>\nconst RESUME = {"name":"NEW","sections":[]};\n<\/script></body></html>';
+  eq("reads a block called RESUME", scope.normalize(scope.extractResume(renamed)).name, "NEW");
   ok("takes a hand-edited block JSON would reject",
      scope.parseLiteral("{name:'Solo', sections:[],}").name === "Solo");
   const evil = '{name:"x", sections:(function(){return []})()}';
@@ -133,9 +135,9 @@ console.log("\nimporting someone else's file");
   let threw2 = false;
   try { scope.parseLiteral('{a:`${globalThis.x=1}`}'); } catch (e){ threw2 = true; }
   ok("refuses a template literal", threw2);
-  ok("reports a file with no CV in it",
-     (() => { try { scope.extractCV("<html>nothing here</html>"); return false; }
-              catch (e){ return /No CV data/.test(e.message); } })());
+  ok("reports a file with no resume in it",
+     (() => { try { scope.extractResume("<html>nothing here</html>"); return false; }
+              catch (e){ return /No resume data/.test(e.message); } })());
 }
 
 console.log("\n" + (fail ? fail + " failed, " : "") + pass + " passed\n");
