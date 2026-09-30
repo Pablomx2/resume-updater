@@ -1603,6 +1603,15 @@ $("#b-export").onclick = async () => {
   downloadFile(html, name);
 };
 $("#b-print").onclick = () => window.print();
+/* Browsers name the saved PDF after the page title, so for the length of the
+   print it reads "POSITION Resume NAME". Events, not the button, so Cmd+P gets it too. */
+let appTitle = document.title;
+addEventListener("beforeprint", () => {
+  appTitle = document.title;
+  const name = (S.name || "").trim().replace(/\b(\w)(\w*)/g, (m,a,b) => a + b.toLowerCase());
+  document.title = [(S.role || "").trim(), "Resume", name].filter(Boolean).join(" ");
+});
+addEventListener("afterprint", () => { document.title = appTitle; });
 $("#b-clear").onclick = () => {
   if (!confirm("Clear the resume in the editor and start empty?\n\nExport first if you want to keep it.")) return;
   S = normalize(SEED); syncOpts(); renderEditor(); layout();
