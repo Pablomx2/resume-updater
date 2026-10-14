@@ -2,7 +2,7 @@
 
 A single-file app for keeping a film-credits resume on one page.
 
-**Open `resume-updater.html` in a browser.** No install, no server, no internet needed.
+**Open `resume-updater.html` in a browser.** No install, no server; the internet is only used to suggest credits.
 
 The app ships **empty** — no resume and no logo are stored in it. Use **Import HTML…** to load
 one (an export from this app, or the original bundled artifact download); the contact line,
@@ -16,6 +16,28 @@ It doubles as the GitHub Pages landing page.
 **Edit** — name, company, role, contact line, sections and credits, all live.
 New credits are added to the **top** of their section, where the newest job belongs.
 Drag the ⠿ handle to reorder a credit, including across sections.
+
+**Suggested credits** — finish typing a project title and, if its **Company / Producer /
+Director** box is still empty, the app quietly looks the title up on Wikidata and Wikipedia.
+It never touches a box you have typed in. What happens next depends on how sure it is:
+
+- **Sure** — the title matches exactly, is the kind of thing the section holds, comes with a
+  company and a name, and has no same-titled rival close behind. The line is written in
+  (`FX Productions / Christopher Storer`) and a note under the credit says so, with **Undo**
+  and **Other options**. If you are already in the box when the answer arrives, it is
+  offered with **Use it** instead of being typed under your cursor.
+- **Not sure** — several productions share the title, or the match is loose. The box is left
+  blank and the note says why, with a link to see the matches.
+- **Nothing found** — the note says so, with a **Search IMDb ↗** link; small productions
+  often are not on Wikipedia.
+
+Candidates are ranked by how closely the title matches, whether they suit the section (a
+TELEVISION row prefers the series, FEATURE FILMS the film), newer over older, better known over
+obscure, and whether there are names to offer at all; episodes sink. Lines copy the resume's
+own house style — capitals, `J. Alvarez` initials, the spacing round the slashes. Notes go
+away at **×** or as soon as you type in the box, and **↓** in any Company box brings the
+suggestions back. This is the one feature that uses the internet; offline it simply stays
+silent.
 
 **Override the automatics** — hover the sheet and drag either column divider to set the
 widths by hand, or move the text slider in the preview bar to set the size. Each switches
