@@ -104,7 +104,7 @@ input{font:inherit;color:inherit}
 .logohint{font-size:11px;color:var(--faint);line-height:1.45;flex:1 1 190px;min-width:0}
 
 .crow,.ctrow{display:flex;align-items:center;gap:5px;padding:3px 0;border-radius:5px}
-.crow{border-bottom:1px solid #f0ede5}
+.crow{border-bottom:1px solid #f0ede5;flex-wrap:wrap}
 .crow.flag{background:#fdf6e4;box-shadow:inset 3px 0 0 var(--warn)}
 .crow.off .in{opacity:.4;text-decoration:line-through}
 .crow.pin{box-shadow:inset 3px 0 0 var(--ok)}
@@ -284,10 +284,39 @@ input{font:inherit;color:inherit}
 }
 @media (max-width:430px){ .grid3{grid-template-columns:1fr} }
 
+/* ---------- credit lookup ---------- */
+.suggest{position:fixed;z-index:40;display:none;max-height:min(360px,60vh);overflow:auto;background:#fff;
+  border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 28px rgba(20,20,15,.18);padding:4px 0;font-size:12px}
+.suggest.show{display:block}
+.suggest .sg{padding:7px 10px 2px;color:var(--faint);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.suggest .sg b{color:var(--soft)}
+.suggest .opt{display:block;width:100%;text-align:left;border:none;background:none;padding:5px 10px 5px 18px;
+  color:var(--ink);font-size:12.5px;line-height:1.35}
+.suggest .opt:hover,.suggest .opt.on{background:#f5f2ea}
+.suggest .msg{padding:8px 10px;color:var(--soft);line-height:1.45}
+.suggest .sf{display:flex;justify-content:space-between;gap:8px;border-top:1px solid #f0ede5;margin-top:4px;
+  padding:6px 10px 3px;font-size:10.5px;color:var(--faint)}
+.suggest .sf a{color:var(--soft)}
+/* the one-line report under a credit after a lookup — quiet, and gone at a click */
+.cnote{flex:0 0 100%;order:6;margin:0 0 3px 22px;font-size:11px;line-height:1.45;color:var(--soft)}
+.cnote::before{font-weight:700;margin-right:5px}
+.cnote.filled::before{content:"✓";color:var(--ok)}
+.cnote.offer::before{content:"→";color:var(--ok)}
+.cnote.unsure::before,.cnote.none::before{content:"?";color:var(--warn)}
+.cnote .lnk{border:none;background:none;padding:0;font-size:inherit;color:var(--ink);text-decoration:underline;cursor:pointer}
+.cnote a{color:var(--ink)}
+.cnote .x{float:right;text-decoration:none;color:var(--faint);font-size:14px;line-height:1;padding:0 4px}
+.cnote .x:hover{color:var(--ink)}
+@media (max-width:760px){
+  .suggest .opt{padding:10px 12px 10px 18px;font-size:14px}
+  .cnote{margin-left:0;font-size:12.5px}
+  .cnote .x{font-size:18px;padding:0 6px}
+}
+
 @page{size:8.5in 11in;margin:0}
 @media print{
   body{background:#fff}
-  .topbar,.mtabs,.left,.editor,.pvbar,.advisor,.hint,.pane>h2{display:none!important}
+  .topbar,.mtabs,.left,.editor,.pvbar,.advisor,.hint,.pane>h2,.suggest{display:none!important}
   .app{display:block;padding:0;gap:0}
   .right{position:static!important;gap:0;max-height:none;
     height:auto!important;overflow:visible!important;visibility:visible!important}
@@ -962,6 +991,445 @@ function renderCandidates(needN, wrapped){
 }
 
 /* =========================================================
+   CREDIT LOOKUP
+   ========================================================= */
+/* A project title is enough to suggest its Company / Producer / Director line.
+   Wikidata finds and disambiguates the title — it answers a browser directly, with
+   no server or key — and the English Wikipedia infobox, where there is one, then
+   supplies the names, since its lists run in billing order and are fuller than
+   Wikidata's. Nothing goes over the network until a credit's title is filled in,
+   and offline the lookup just says it could not get through. */
+const WD = "https://www.wikidata.org/w/api.php?format=json&origin=*&";
+const WP = "https://en.wikipedia.org/w/api.php?format=json&formatversion=2&origin=*&";
+
+/* what a section's name says its credits are, so a FEATURE FILMS row prefers the
+   film and a TELEVISION row the series that shares its title */
+function sectionKind(name){
+  const n = String(name||"").toUpperCase();
+  if (/MUSIC VIDEO/.test(n)) return "mv";
+  if (/COMMERCIAL|ADVERT|\bSPOTS?\b/.test(n)) return "ad";
+  if (/TELEVISION|\bTV\b|SERIES|EPISODIC|STREAMING/.test(n)) return "tv";
+  if (/FEATURE|FILM|MOVIE|DOCUMENTAR|SHORT/.test(n)) return "film";
+  return "";
+}
+
+/* What a search hit is, from its "instance of" claims, else its one-line
+   description. Anything that is not a production — a person, an album, a town —
+   comes back empty and is dropped. */
+const KIND_QIDS = {Q11424:"film", Q24869:"film", Q24862:"film", Q93204:"film", Q506240:"film",
+  Q202866:"film", Q5398426:"tv", Q526877:"tv", Q1259759:"tv", Q581714:"tv", Q15416:"tv",
+  Q21191270:"episode", Q193977:"mv"};
+function hitKind(desc, p31){
+  if ((p31||[]).indexOf("Q5") >= 0) return "";
+  for (const q of p31||[]) if (KIND_QIDS[q]) return KIND_QIDS[q];
+  /* only the noun phrase counts — "2023 film by Celine Song" is not a song */
+  const d = String(desc||"").toLowerCase().replace(/\b(by|starring|featuring)\b.*$/, "");
+  if (/\b(director|actor|actress|producer|editor|composer|writer|company|studio|character|festival|award|soundtrack|novel|album|song|book)\b/.test(d)) return "";
+  if (/\bepisode\b/.test(d)) return "episode";
+  if (/music video/.test(d)) return "mv";
+  if (/commercial|advert/.test(d)) return "ad";
+  if (/television film|tv film/.test(d)) return "film";
+  if (/television|\btv\b|series|sitcom|talk show|reality show/.test(d)) return "tv";
+  if (/\bfilm\b|\bmovie\b|documentary/.test(d)) return "film";
+  return "";
+}
+
+/* The sorting criteria, strongest first: how closely the title matches, whether
+   it is the kind of thing the section holds, newer over older (a resume's credits
+   are mostly recent), better known over obscure, and whether there are any names
+   to suggest at all. Episodes sink — a resume lists the series. */
+function rankHits(title, sectionK, hits){
+  const norm = t => String(t||"").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const want = norm(title);
+  return hits.filter(h => h.kind).map(h => {
+    const sim = similarity(want, norm(h.label));
+    let score = 3 * sim + (want === norm(h.label) ? 1 : 0);
+    if (sectionK && h.kind === sectionK) score += 1.5;
+    else if (sectionK) score -= 0.75;
+    if (h.kind === "episode") score -= 1.5;
+    if (h.year) score += Math.max(0, Math.min(1, (h.year - 1970) / 55));
+    score += Math.min(2, Math.log10(1 + (h.sites||0))) * 0.5;
+    if (h.hasCo) score += 0.4;
+    if (h.hasDir) score += 0.3;
+    return Object.assign({}, h, {score:score, sim:sim});
+  }).filter(h => h.sim >= 0.5).sort((a, b) => b.score - a.score);
+}
+
+/* One infobox field's value as a plain list of names: links reduced to their shown
+   text, list templates (Plainlist, ubl, hlist…) unpacked, everything else — refs,
+   comments, footnote templates, "(uncredited)" — thrown away. */
+const LIST_TPL = /^(?:plain ?list|flat ?list|ubl|unbulleted ?list|bulleted ?list|hlist|collapsible ?list|nowrap|nobr)$/i;
+function infoboxList(v){
+  let s = String(v||""), prev;
+  do {
+    prev = s;
+    s = s.replace(/\{\{([^{}|]*)(\|[^{}]*)?\}\}/g, (m, name, args) =>
+      LIST_TPL.test(name.trim()) ? "\n" + (args||"").slice(1).split("|")
+        .filter(a => !/^\s*\w+\s*=/.test(a)).join("\n") + "\n" : "");
+  } while (s !== prev);
+  return s.split(/\n|<br\s*\/?>/i)
+    .map(t => dec(t).replace(/<[^>]+>/g, "").replace(/'{2,}/g, "").replace(/\([^)]*\)/g, "")
+      .replace(/^[\s*#:;,]+|[\s,;:]+$/g, "").replace(/\s+/g, " ").trim())
+    .filter(t => t && !/^(uncredited|see below|n\/a)$/i.test(t));
+}
+/* the first infobox on a page, as {field: [names]} */
+function parseInfobox(wt){
+  wt = String(wt||"");
+  const out = {}, at = wt.search(/\{\{\s*Infobox/i);
+  if (at < 0) return out;
+  let depth = 0, end = wt.length;
+  for (let i = at; i < wt.length - 1; i++){
+    const two = wt.substr(i, 2);
+    if (two === "{{"){ depth++; i++; }
+    else if (two === "}}"){ depth--; i++; if (!depth){ end = i - 1; break; } }
+  }
+  const body = wt.slice(at + 2, end)
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<ref[^>]*\/>/gi, "")
+    .replace(/<ref[^>]*>[\s\S]*?<\/ref>/gi, "")
+    /* a link reads as its shown text, unless that is an abbreviation of the page
+       it points at — [[FX Productions|FXP]] is FX Productions on a resume */
+    .replace(/\[\[([^\]|]*)(?:\|([^\]]*))?\]\]/g, (m, target, shown) => {
+      const full = target.replace(/\s*\([^)]*\)\s*$/, "").trim();
+      if (shown === undefined) return full;
+      return /^[A-Z0-9&]{2,5}$/.test(shown.trim()) && full[0] === shown.trim()[0] && full.length > shown.length
+        ? full : shown;
+    });
+  /* fields split on the pipes that are not inside a nested template */
+  const parts = [];
+  let d = 0, cur = "";
+  for (let i = 0; i < body.length; i++){
+    const two = body.substr(i, 2);
+    if (two === "{{" || two === "}}"){ d += two === "{{" ? 1 : -1; cur += two; i++; continue; }
+    if (body[i] === "|" && !d){ parts.push(cur); cur = ""; continue; }
+    cur += body[i];
+  }
+  parts.push(cur);
+  parts.forEach(p => {
+    const eq = p.indexOf("=");
+    if (eq < 0) return;
+    const items = infoboxList(p.slice(eq + 1));
+    if (items.length) out[p.slice(0, eq).trim().toLowerCase().replace(/\s+/g, "_")] = items;
+  });
+  return out;
+}
+
+const CORP = /\b(corporation|corp|company|pictures|films?|productions?|studios?|entertainment|media|inc|ltd|llc|broadcasting|television|network|bbc|itv|hbo|netflix)\b/i;
+/* A ranked hit, turned into the lines it could fill the box with. Each line is a
+   list of parts tagged co(mpany) or p(erson), so house style can shorten the
+   people without touching the companies. Infobox names win; Wikidata fills in. */
+function creditOptions(h, labels){
+  const b = h.box || {}, L = labels || {};
+  const wd = a => (a||[]).map(q => L[q]).filter(Boolean);
+  const pick = function(){ for (const l of arguments) if (l && l.length) return l; return []; };
+  const person = n => String(n||"").split(/\s*,\s*|\s+and\s+|\s*&\s*/)[0].trim();
+  const firm = n => String(n||"").split(/\s*,\s*/)[0].trim();
+  const directors = pick(b.director, b.directors, b.directed_by, wd(h.dir));
+  const creators  = pick(b.showrunner, b.creator, b.created_by, wd(h.runner), wd(h.creator));
+  /* a series has many directors; its showrunner or creator is the name that stands for it */
+  const dir  = person((h.kind === "tv" ? pick(creators, directors) : pick(directors, creators))[0]);
+  const outlet = firm(pick(b.network, b.channel, wd(h.net), b.distributor, b.distributed_by, wd(h.dist))[0]);
+  const co = firm(pick(b.production_companies, b.production_company, b.studio, b.studios, b.company, wd(h.co))[0]) || outlet;
+  /* Wikidata sometimes names a company as a producer ("British Broadcasting
+     Corporation"); the producer slot is for a person */
+  const prod = pick(b.producer, b.producers, b.produced_by, wd(h.prod)).map(person)
+    .filter(n => n && n !== dir && n !== co && n !== outlet && !CORP.test(n))[0];
+  const P = v => v ? {t:"p", v:v} : null, C = v => v ? {t:"co", v:v} : null;
+  const seen = {}, options = [];
+  [[C(co), P(prod), P(dir)], [C(co), P(dir)], outlet && outlet !== co ? [C(outlet), P(dir)] : []].forEach(o => {
+    o = o.filter(Boolean);
+    const k = o.map(x => x.v).join("/");
+    if (o.length && !seen[k]){ seen[k] = 1; options.push(o); }
+  });
+  return {label:h.label, desc:h.desc, kind:h.kind, score:h.score, exact:h.sim === 1, options:options};
+}
+
+/* Whether the best match is safe to write into the box unasked. Anything short of
+   sure is left for the user: the title must match exactly, be the kind of thing the
+   section holds, come with a company and a name, and not have a same-titled rival
+   of the same kind close behind it — "The Bear" in FEATURE FILMS is three films. */
+const SURE_MARGIN = 1.5;
+function isConfident(sectionK, hits){
+  const a = hits[0], b = hits[1];
+  if (!a || !a.exact || !a.options.length || a.kind === "episode") return false;
+  if (sectionK && a.kind !== sectionK) return false;
+  const first = a.options[0];
+  if (!first.some(x => x.t === "co") || !first.some(x => x.t === "p")) return false;
+  return !(b && b.exact && (!sectionK || b.kind === a.kind) && a.score - b.score < SURE_MARGIN);
+}
+
+/* Suggestions are written the way the rest of the resume is: in capitals if most
+   credits are, with "J. Alvarez" initials if most credits use them, and with the
+   same spacing round the slashes. */
+function houseStyle(credits){
+  const cs = (credits||[]).map(c => String(c.c||"").trim()).filter(Boolean);
+  const most = f => cs.length > 0 && cs.filter(f).length * 2 > cs.length;
+  return {
+    caps: most(c => /[a-z]/i.test(c) && c === c.toUpperCase()),
+    initials: most(c => /(^|\/)\s*[A-Z]\.\s?[A-Z][A-Za-z]/.test(c)),
+    sep: cs.filter(c => /\S\/\S/.test(c)).length > cs.filter(c => /\s\/\s/.test(c)).length ? "/" : " / "
+  };
+}
+function formatOption(parts, st){
+  const s = parts.map(x => {
+    if (x.t !== "p" || !st.initials) return x.v;
+    const w = x.v.split(/\s+/);
+    return w.length < 2 ? x.v : w[0][0] + ". " + w[w.length - 1];
+  }).join(st.sep);
+  return st.caps ? s.toUpperCase() : s;
+}
+
+const lookupCache = new Map();
+/* Wikimedia throttles clients that do not say who they are; a browser cannot set
+   User-Agent, so this is the header their API policy asks pages to send instead */
+async function getJSON(url, signal){
+  const r = await fetch(url, {signal:signal, headers:{"Api-User-Agent":"ResumeUpdater/1.0 (https://pablomx2.github.io/resume-updater/)"}});
+  if (!r.ok) throw new Error(r.status === 429 ? "busy" : "HTTP " + r.status);
+  return r.json();
+}
+async function lookupCredit(title, sectionK, signal){
+  const key = sectionK + "|" + title.trim().toLowerCase();
+  if (lookupCache.has(key)) return lookupCache.get(key);
+  const found = ((await getJSON(WD + "action=wbsearchentities&type=item&language=en&uselang=en&limit=12&search=" +
+    encodeURIComponent(title.trim()), signal)).search || [])
+    /* skip the claims of anything whose description already rules it out — a
+       famous namesake's entity can weigh more than all the others together */
+    .filter(f => !f.description || hitKind(f.description, []));
+  let top = [];
+  if (found.length){
+    const ents = (await getJSON(WD + "action=wbgetentities&props=claims|sitelinks&ids=" +
+      found.map(f => f.id).join("|"), signal)).entities || {};
+    const ids = c => (c||[]).map(x => x.mainsnak.datavalue && x.mainsnak.datavalue.value.id).filter(Boolean);
+    const year = c => { for (const x of c||[]){ const t = x.mainsnak.datavalue && x.mainsnak.datavalue.value.time;
+      if (t) return +t.slice(1, 5); } return 0; };
+    top = rankHits(title, sectionK, found.map(f => {
+      const e = ents[f.id] || {}, c = e.claims || {}, sl = e.sitelinks || {};
+      return {label:f.label || "", desc:f.description || "",
+        kind:hitKind(f.description, ids(c.P31)),
+        year:year(c.P577) || year(c.P580) || +(String(f.description||"").match(/\b(?:19|20)\d\d\b/) || [0])[0],
+        sites:Object.keys(sl).length, wiki:sl.enwiki ? sl.enwiki.title : "",
+        dir:ids(c.P57), prod:ids(c.P162), co:ids(c.P272), net:ids(c.P449),
+        creator:ids(c.P170), runner:ids(c.P1431), dist:ids(c.P750),
+        hasCo:!!(c.P272 || c.P449), hasDir:!!(c.P57 || c.P170)};
+    })).slice(0, 3);
+  }
+  /* the names the claims point at, then each hit's infobox, all at once */
+  let partial = false;
+  const refs = [...new Set(top.flatMap(h =>
+    [h.dir, h.prod, h.co, h.net, h.creator, h.runner, h.dist].flatMap(a => a.slice(0, 3))))].slice(0, 50);
+  const labels = {};
+  await Promise.all([
+    refs.length && getJSON(WD + "action=wbgetentities&props=labels&languages=en&ids=" + refs.join("|"), signal)
+      .then(r => { const E = r.entities || {};
+        for (const k in E) if (E[k].labels && E[k].labels.en) labels[k] = E[k].labels.en.value; }),
+    ...top.filter(h => h.wiki).map(h =>
+      getJSON(WP + "action=parse&prop=wikitext&section=0&redirects=1&page=" + encodeURIComponent(h.wiki), signal)
+        .then(r => { h.box = parseInfobox(r.parse && r.parse.wikitext); })
+        /* a missing infobox is not a failure, but nor is the answer worth keeping */
+        .catch(e => { if (e.name === "AbortError") throw e; partial = true; }))
+  ]);
+  /* judged before the empty ones are dropped: a same-titled rival with no names
+     to offer still makes the match ambiguous */
+  const all = top.map(h => creditOptions(h, labels));
+  const out = {hits:all.filter(r => r.options.length), sure:isConfident(sectionK, all)};
+  if (!partial) lookupCache.set(key, out);
+  return out;
+}
+
+/* ---------- the dropdown under a credit's Company box ---------- */
+const sug = {box:null, input:null, ctl:null, title:"", res:null, state:"", style:null, at:-1, filter:""};
+function sugBox(){
+  if (!sug.box){
+    sug.box = el("div", {class:"suggest", role:"listbox"});
+    /* keep focus in the input while an option is clicked */
+    sug.box.addEventListener("mousedown", e => { if (!e.target.closest("a")) e.preventDefault(); });
+    document.body.append(sug.box);
+  }
+  return sug.box;
+}
+function placeSuggest(){
+  const b = sug.box;
+  if (!b || !sug.input) return;
+  if (!sug.input.isConnected){ closeSuggest(); return; }
+  const r = sug.input.getBoundingClientRect();
+  b.style.width = Math.min(Math.max(r.width, 300), innerWidth - 16) + "px";
+  b.style.left = Math.max(8, Math.min(r.left, innerWidth - 8 - b.offsetWidth)) + "px";
+  const below = r.bottom + 4, h = b.offsetHeight;
+  b.style.top = (below + h > innerHeight - 8 && r.top - h - 4 > 8 ? r.top - h - 4 : below) + "px";
+  b.style.visibility = r.bottom < 0 || r.top > innerHeight ? "hidden" : "";
+}
+function closeSuggest(){
+  if (sug.ctl) sug.ctl.abort();
+  sug.ctl = null; sug.input = null; sug.at = -1;
+  if (sug.box) sug.box.classList.remove("show");
+}
+function renderSuggest(){
+  /* only what is typed after the list opens narrows it — a box that already holds
+     a line still shows every alternative */
+  const b = sugBox(), q = sug.filter.trim().toLowerCase();
+  b.innerHTML = "";
+  sug.at = -1;
+  if (sug.state === "loading") b.append(el("div", {class:"msg"}, ["Looking up “" + sug.title + "”…"]));
+  else if (sug.state === "busy") b.append(el("div", {class:"msg"},
+    ["Wikipedia is asking for a short pause — try again in a minute."]));
+  else if (sug.state === "error") b.append(el("div", {class:"msg"},
+    ["Couldn’t reach Wikidata — check the connection and try again."]));
+  else {
+    let shown = 0;
+    (sug.res || []).forEach(r => {
+      const opts = r.options.map(o => formatOption(o, sug.style))
+        .filter(t => !q || t.toLowerCase().indexOf(q) >= 0);
+      if (!opts.length) return;
+      b.append(el("div", {class:"sg", title:r.desc}, [el("b", {}, [r.label]), r.desc ? " · " + r.desc : ""]));
+      opts.forEach(t => {
+        shown++;
+        b.append(el("button", {class:"opt", type:"button", role:"option", tabindex:"-1",
+          onclick:() => pickSuggest(t)}, [t]));
+      });
+    });
+    if (!shown){
+      if (q){ closeSuggest(); return; }   /* typing past every suggestion means none fit */
+      b.append(el("div", {class:"msg"}, ["No film or TV listing found for “" + sug.title +
+        "”. Smaller productions often aren’t on Wikipedia."]));
+    }
+  }
+  const foot = el("div", {class:"sf"}, ["From Wikipedia & Wikidata"]);
+  foot.append(el("a", {href:"https://www.imdb.com/find/?s=tt&q=" + encodeURIComponent(sug.title),
+    target:"_blank", rel:"noopener"}, ["Search IMDb ↗"]));
+  b.append(foot);
+  b.classList.add("show");
+  placeSuggest();
+}
+function pickSuggest(text){
+  const input = sug.input;
+  if (!input) return;
+  input.value = text;
+  input.dispatchEvent(new Event("input"));
+  closeSuggest();
+  input.focus();
+}
+async function openSuggest(input, credit, section){
+  const title = credit.p.trim();
+  if (!title){ closeSuggest(); return; }
+  sug.filter = "";
+  if (sug.input === input && sug.title === title && sug.state !== "error"){ renderSuggest(); return; }
+  if (sug.ctl) sug.ctl.abort();
+  const ctl = new AbortController();
+  Object.assign(sug, {input:input, ctl:ctl, title:title, res:null, state:"loading",
+    style:houseStyle(S.sections.flatMap(s => s.credits))});
+  renderSuggest();
+  try {
+    sug.res = (await lookupCredit(title, sectionKind(section.name), ctl.signal)).hits;
+    if (sug.ctl !== ctl) return;
+    sug.state = "done";
+  } catch (e){
+    if (sug.ctl !== ctl) return;
+    sug.state = e.message === "busy" ? "busy" : "error";
+  }
+  renderSuggest();
+}
+function suggestKey(e, input, credit, section){
+  const open = sug.input === input && sug.box && sug.box.classList.contains("show");
+  const opts = open ? [...sug.box.querySelectorAll(".opt")] : [];
+  if (e.key === "ArrowDown" || e.key === "ArrowUp"){
+    e.preventDefault();
+    if (!open){ openSuggest(input, credit, section); return; }
+    if (!opts.length) return;
+    /* -1 is the typed text itself, so the arrows cycle through it as well */
+    const n = opts.length + 1;
+    sug.at = (sug.at + 1 + (e.key === "ArrowDown" ? 1 : -1) + n) % n - 1;
+    opts.forEach((o, i) => o.classList.toggle("on", i === sug.at));
+    if (sug.at >= 0) opts[sug.at].scrollIntoView({block:"nearest"});
+  } else if (e.key === "Enter" && open && sug.at >= 0){
+    e.preventDefault();
+    pickSuggest(opts[sug.at].textContent);
+  } else if (e.key === "Escape" && open){
+    e.preventDefault();
+    closeSuggest();
+  }
+}
+
+/* ---------- filling a credit in on its own ---------- */
+/* When a title is entered and its Company box is empty, the lookup runs quietly in
+   the background. A sure match is written in; anything less leaves the box blank.
+   Either way a one-line note under the credit says what happened, and the user's
+   own typing is never overwritten — the box is only written while it is still
+   empty, or still holds exactly the line this filled in for an earlier title. */
+const notes = new WeakMap();      /* credit → the note shown under it */
+const filledBy = new WeakMap();   /* credit → the line auto-fill wrote, until the user edits it */
+const pending = new WeakMap();    /* credit → its latest lookup, so a stale answer is dropped */
+const rows = new WeakMap();       /* credit → its row in the editor, and its section */
+function writeCompany(c, v){
+  c.c = v;
+  const r = rows.get(c), input = r && r.row.isConnected && r.row.querySelector(".in.c");
+  if (input) input.value = v;
+  layoutSoon();
+}
+async function autoSuggest(c){
+  const r = rows.get(c), title = c.p.trim();
+  const ours = () => !c.c.trim() || filledBy.get(c) === c.c;
+  if (!r || !title || !ours()){ pending.delete(c); if (notes.has(c)) setNote(c, null); return; }
+  const ticket = {};
+  pending.set(c, ticket);
+  let res;
+  try { res = await lookupCredit(title, sectionKind(r.s.name)); }
+  catch (e){ return; }            /* offline or throttled: say nothing, change nothing */
+  if (pending.get(c) !== ticket || c.p.trim() !== title || !ours()) return;
+  pending.delete(c);
+  const hit = res.hits[0];
+  if (res.sure){
+    const line = formatOption(hit.options[0], houseStyle(S.sections.flatMap(x => x.credits).filter(x => x !== c)));
+    const now = rows.get(c), input = now && now.row.querySelector(".in.c");
+    /* never write under someone's cursor — offer it instead */
+    if (input && document.activeElement === input){ setNote(c, {type:"offer", title:title, line:line, hit:hit}); return; }
+    writeCompany(c, line);
+    filledBy.set(c, line);
+    setNote(c, {type:"filled", title:title, hit:hit});
+  } else {
+    /* a line filled in for the old title is no longer right for this one */
+    if (c.c && filledBy.get(c) === c.c){ writeCompany(c, ""); filledBy.delete(c); }
+    setNote(c, {type:res.hits.length ? "unsure" : "none", title:title, hit:hit, n:res.hits.length});
+  }
+}
+function setNote(c, n){
+  if (n) notes.set(c, n); else notes.delete(c);
+  renderNote(c);
+}
+function renderNote(c){
+  const r = rows.get(c);
+  if (!r) return;
+  const old = r.row.querySelector(".cnote");
+  if (old) old.remove();
+  const n = notes.get(c);
+  if (!n) return;
+  const co = () => r.row.querySelector(".in.c");
+  const act = (label, fn) => el("button", {type:"button", class:"lnk", onclick:fn}, [label]);
+  const more = label => act(label, () => { const i = co(); i.focus(); openSuggest(i, c, r.s); });
+  const what = n.hit ? "“" + n.hit.label + "”" + (n.hit.desc ? " (" + n.hit.desc + ")" : "") : "";
+  const box = el("div", {class:"cnote " + n.type, role:"status"});
+  box.append(el("button", {type:"button", class:"lnk x", title:"Dismiss", "aria-label":"Dismiss",
+    onclick:() => setNote(c, null)}, ["×"]));
+  if (n.type === "filled") box.append("Filled in from Wikipedia — " + what + ". ",
+    act("Undo", () => { writeCompany(c, ""); filledBy.delete(c); setNote(c, null); co().focus(); }),
+    " · ", more("Other options"));
+  else if (n.type === "offer") box.append("Found " + what + ": " + n.line + " — ",
+    act("Use it", () => {
+      if (c.c.trim()) return setNote(c, null);   /* typed in the meantime: theirs stands */
+      writeCompany(c, n.line); filledBy.set(c, n.line); setNote(c, {type:"filled", title:n.title, hit:n.hit});
+    }), " · ", more("Other options"));
+  else if (n.type === "unsure") box.append(
+    (n.n > 1 ? "Not sure which “" + n.title + "” this is" : "Found " + what + " but couldn’t confirm it") +
+    " — left blank for you. ", more(n.n > 1 ? "See " + n.n + " matches" : "See it"));
+  else box.append("No listing found online for “" + n.title + "” — left blank for you. ",
+    el("a", {href:"https://www.imdb.com/find/?s=tt&q=" + encodeURIComponent(n.title), target:"_blank", rel:"noopener"},
+      ["Search IMDb ↗"]));
+  r.row.append(box);
+}
+
+addEventListener("scroll", placeSuggest, true);
+addEventListener("resize", placeSuggest);
+
+/* =========================================================
    EDITOR
    ========================================================= */
 function setSubtitle(){
@@ -1041,9 +1509,25 @@ function creditRow(s, si, c, ci){
     addEventListener("pointerup", () => { row.draggable = false; }, {once:true});
   });
   row.append(grip);
-  row.append(bind(el("input", {class:"in p", placeholder:"Project"}), c, "p"));
+  const proj = bind(el("input", {class:"in p", placeholder:"Project"}), c, "p");
+  /* the one moment a lookup happens on its own: a title has just been entered */
+  proj.addEventListener("change", () => autoSuggest(c));
+  row.append(proj);
   row.append(bind(el("input", {class:"in r", placeholder:"Position"}), c, "r"));
-  row.append(bind(el("input", {class:"in c", placeholder:"Company / Producer / Director"}), c, "c"));
+  /* Nothing pops up here unasked. The down arrow opens the suggestions, and typing
+     while they are open narrows them; typing at all retires the row's note. */
+  const co = bind(el("input", {class:"in c", placeholder:"Company / Producer / Director",
+    autocomplete:"off", title:"Press ↓ for suggestions"}), c, "c");
+  co.addEventListener("input", () => {
+    filledBy.delete(c);
+    if (notes.has(c)) setNote(c, null);
+    if (sug.input === co){ sug.filter = co.value; renderSuggest(); }
+  });
+  co.addEventListener("keydown", e => suggestKey(e, co, c, s));
+  co.addEventListener("blur", () => setTimeout(() => {
+    if (sug.input === co && document.activeElement !== co) closeSuggest();
+  }, 200));
+  row.append(co);
   /* Toggling used to rebuild the entire editor, which threw away the scroll
      position — a jump to the top of the list on every tap. Touch just this row. */
   const pinBtn = el("button", {class:"ico"+(c.pin?" on":""), "aria-pressed":c.pin?"true":"false",
@@ -1095,6 +1579,8 @@ function creditRow(s, si, c, ci){
     const src = dragSrc; dragSrc = null;
     moveCredit(src, si, ci, after);
   });
+  rows.set(c, {row:row, s:s});
+  renderNote(c);
   return row;
 }
 
